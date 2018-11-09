@@ -12,21 +12,25 @@ def clean_text(in_string):
 
 
 def add_node(label, color, mod_version):
-    f.write("\n\n\t")
+    f.write("\n\n\t\t")
 
     # The first label for each node cannot include a dash
     f.write(clean_text(label) + """ [ label=<
-        <table border="1" cellborder="0" cellspacing="1">
-          <tr><td align="left"><b>""" + label + """</b></td></tr>
-          <tr><td align="left">infrastructure-modules</td></tr>
-          <tr><td align="left"><font color=""" + "\"" + color + """">""" + mod_version + """</font></td></tr>
-        </table>>];""")
+                <table border="1" cellborder="0" cellspacing="1">
+                    <tr><td align="left"><b>""" + label + """</b></td></tr>
+                    <tr><td align="left">infrastructure-modules</td></tr>
+                    <tr><td align="left"><font color=""" + "\"" + color + """">""" + mod_version + """</font></td></tr>
+                </table>>];""")
 
 
 def add_edge(from_node, to_node):
     f.write("\n\n")
-    f.write("\t" + clean_text(from_node) + " -> " + clean_text(to_node) + ";")
+    f.write("\t\t" + clean_text(from_node) + " -> " + clean_text(to_node) + ";")
 
+def add_cluster(cluster_name):
+    f.write("\n\t subgraph " + cluster_name )
+    f.write("\n\t{")
+    f.write("\n\t\tlabel=""" + cluster_name + "")
 
 #start_dir="/Users/lkoivu/workspace/Infrastructure-Live/"
 start_dir="/Users/lkoivu/tmp3/"
@@ -37,34 +41,42 @@ filename = path + "/" + datetime.datetime.now().strftime("%Y-%m-%d-%H-%M.dot")
 # Open the file, write the header
 f = open( filename, "w")
 
-# Strict keyword enforces only one edge between two nodes. 
+# Strict keyword enforces only one edge between two nodes.
 f.write("strict digraph D {\n\n")
 f.write("""\tnode [shape=plaintext fontname="Sans serif" fontsize="8"];\n""")
 
-for root, dir, files in os.walk(start_dir):
 
-    for items in fnmatch.filter(files, "*.tfvars"):
-       # print (root)
-        with open(root + "/" + items, 'r') as file:
-            obj=hcl.load(file)
-            try:
-                mod_version = obj['terragrunt']['terraform']['source'].split("ref=")
-                label = root.split('/')[-1]
-                add_node(label, 'red', str(mod_version[1]))
-            except Exception as e:
-                print(e)
+for app in os.listdir(start_dir):
+
+    if os.path.isdir(start_dir + "/" + app):
+        add_cluster(app)
+
+    for root, dir, files in os.walk(start_dir + "/" + app):
 
 
-            try:
-                paths=obj['terragrunt']['dependencies']['paths']
-                referenced=str(paths[-1]).split('../')
-                source = mod_version[0].split('//')
-                print("graphing {} : {}".format(source[-1], str(referenced[-1])))
-                add_edge(referenced[-1],label)
-            except Exception as e:
-                print(e)
+        for items in fnmatch.filter(files, "*.tfvars"):
+           # print (root)
+            with open(root + "/" + items, 'r') as file:
+                obj=hcl.load(file)
+                try:
+                    mod_version = obj['terragrunt']['terraform']['source'].split("ref=")
+                    label = root.split('/')[-1]
+                    add_node(label, 'red', str(mod_version[1]))
+                except Exception as e:
+                    print(e)
 
-f.write("}")
+
+                try:
+                    paths=obj['terragrunt']['dependencies']['paths']
+                    referenced=str(paths[-1]).split('../')
+                    source = mod_version[0].split('//')
+                    print("graphing {} : {}".format(source[-1], str(referenced[-1])))
+                    add_edge(referenced[-1],label)
+                except Exception as e:
+                    print(e)
+
+    f.write("\n\t}")
+
 f.close()
 
 
