@@ -4,9 +4,9 @@ import fnmatch
 from graphviz import Digraph
 import hcl
 
-start_dir="/Users/lkoivu/tmp3/"
+start_dir="/Users/lkoivu/tmp3"
 
-path = "/Users/lkoivu/tmp/"
+path = "/Users/lkoivu/tmp"
 filename = path + "/" + datetime.datetime.now().strftime("%Y-%m-%d-%H-%M.dot")
 
 # Open the file, write the header
@@ -14,63 +14,92 @@ f = open( filename, "w")
 
 for app in os.listdir(start_dir):
 
-    G=Digraph(name=app)
-    G.attr(kw='graph', compound="true")
-    G.node_attr['shape']='circle'
-    G.node_attr['fixedsize']='true'
-    G.node_attr['fontsize']='8'
-    G.node_attr['style']='filled'
-    G.graph_attr['outputorder']='edgesfirst'
-    G.graph_attr['label']=app
-    G.graph_attr['ratio']='1.0'
-    G.edge_attr['color']='#1100FF'
-    G.edge_attr['style']='setlinewidth(2)'
+    if os.path.isdir(start_dir + "/" + app):
 
-    # if os.path.isdir(start_dir + "/" + app):
-    #     add_cluster(app)
+        G=Digraph(name=app)
+        G.attr(kw='graph', compound="true")
+        G.node_attr['shape']='circle'
+        G.node_attr['fixedsize']='true'
+        G.node_attr['fontsize']='8'
+        G.node_attr['style']='filled'
+        G.graph_attr['outputorder']='edgesfirst'
+        G.graph_attr['label']=app
+        G.graph_attr['ratio']='1.0'
+        G.edge_attr['color']='#1100FF'
+        G.edge_attr['style']='setlinewidth(2)'
 
-#    for dir in os.listdir(start_dir + "/" + app):
-    for root, dir, files in os.walk(start_dir + "/" + app):
-        for dir in os.listdir(start_dir + "/" + app + "/"):
-            g = Digraph(name=dir)
+        # if os.path.isdir(start_dir + "/" + app):
+        #     add_cluster(app)
 
-            # if os.path.isdir(root + "/" + dir ):
-            #     gg = Digraph(name=dir)
-            #     g.subgraph(gg)
+        for env in os.listdir(start_dir + "/" + app):
+            try:
 
-            for file in files:
-                if file.endswith(".tfvars"):
-                    with open(root + "/" + file, 'r') as fh:
-                        obj=hcl.load(fh)
-                        try:
+                if os.path.isdir(start_dir + "/" + app + "/" + env):
 
-                            mod_version = obj['terragrunt']['terraform']['source'].split("ref=")
-                        except Exception as e:
-                            print('No terragrunt/terraform/source in this file {}'.format(e))
-                            continue
+                    g = Digraph(name='cluster_' + env)
+                    g.edge(app, env)
 
-                        try:
-                            label = root.split('/')[-1]
-                            G.node(label)
-                            G.node_attr['fillcolor'] = 'lightgrey'
-                            # n = G.get_node(label)
+                    for root, dirs, files in os.walk(start_dir + "/" + app + "/" + env):
+
+                        if len(dirs) > 0:
+                            for dir in dirs:
+                               # g.node(dir)
+                                g.edge(root.split("/")[-1] + env, dir + env)
+                                #g.node_attr['comment']= env
+
+                G.subgraph(g)
+                G.view(filename,start_dir)
 
 
-                        except Exception as e:
-                            print('Exception {}'.format(e))
+            except NotADirectoryError as e:
+                print("error : {}".format(e))
+                continue
+
+#             G.subgraph(g)
+# G.view(filename,start_dir)
 
 
-                        try:
-                            paths=obj['terragrunt']['dependencies']['paths']
-                            referenced=str(paths[-1]).split('../')
-                            source = mod_version[0].split('//')
-                            print("graphing {} : {}".format(source[-1], str(referenced[-1])))
-
-                            G.edge(source[-1], referenced[-1])
-
-                        except Exception as e:
-                            print("edge exception {}".format(e))
-        G.subgraph(g)
+#             for file in files:
+#                 if file.endswith(".tfvars"):
+#                     with open(root + "/" + file, 'r') as fh:
+#                         obj=hcl.load(fh)
+#                         try:
+#
+#                             mod_version = obj['terragrunt']['terraform']['source'].split("ref=")
+#
+#                         except Exception as e:
+#                             print('No terragrunt/terraform/source in this file {}'.format(e))
+#                             continue
+#
+#                         try:
+#                             label = root.split('/')[-1]
+#                             g = Digraph(name=label)
+#                             g.node(label)
+#                             g.node_attr['fillcolor'] = 'lightgrey'
+#                             g.node_attr['comment'] = mod_version
+#                             G.subgraph(g)
+#
+#
+#                         except Exception as e:
+#                             print('Exception {}'.format(e))
+#
+#
+#                         try:
+#                             paths=obj['terragrunt']['dependencies']['paths']
+#                             referenced=str(paths[-1]).split('../')
+#                             source = mod_version[0].split('//')
+#                             print("graphing {} : {}".format(source[-1], str(referenced[-1])))
+#
+#                             G.edge(source[-1], referenced[-1])
+#
+#                         except Exception as e:
+#                             print("edge exception {}".format(e))
+#
+# G.view('test.dot',start_dir)
+#
+#
+#g.Digraph()
+ #       G.subgraph(g)
 
 
     # for root, dir, files in os.walk(start_dir + "/" + app):
@@ -114,4 +143,3 @@ for app in os.listdir(start_dir):
     #             except Exception as e:
     #                 print("edge exception {}".format(e))
 
-G.view('test.dot',start_dir)
