@@ -67,11 +67,19 @@ for ARGS.app_name in os.listdir(ARGS.code_path):
                         for directory in dirs:
                            # g.node(dir)
                             if env not in (directory, root.split("/")[-1]):
-                                g.edge(dir + "-" + env, root.split("/")[-1] + "-" + env)
+                                g.edge( root.split("/")[-1] + "-" + env, directory + "-" + env)
                             elif directory == env:
-                                g.edge(directory + "-app", root.split("/")[-1] + "-" + env)
+
+                                if root.split("/")[-2] == env:
+                                    # This is the app layer, not the env. layer.
+                                    g.edge(directory + "-app", root.split("/")[-1] + "-" + env)
+                                else:
+                                    g.edge(directory + "-env", root.split("/")[-1] + "-" + env)
+
                             elif root.split("/")[-1] == env:
-                                g.edge(root.split("/")[-1] + "-" + env, directory + "-app")
+                                g.edge(root.split("/")[-1] + '-env', directory + "-" + env)
+
+                            g.view('latest', ARGS.code_path)
 
                                 #g.node_attr['comment']= env
                     g.view('latest', ARGS.code_path)
