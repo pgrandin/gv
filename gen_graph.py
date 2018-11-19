@@ -63,21 +63,40 @@ for ARGS.app_name in os.listdir(ARGS.code_path):
                     for root, dirs, files in os.walk(ARGS.code_path +
                                                      "/" + ARGS.app_name + "/" + env):
 
+                        parent_dir=root.split("/")[-1]
+
  #                       if len(dirs) > 0:
                         for directory in dirs:
                            # g.node(dir)
-                            if env not in (directory, root.split("/")[-1]):
-                                g.edge( root.split("/")[-1] + "-" + env, directory + "-" + env)
+                            if env not in (directory, parent_dir):
+                                # if directory == '_global', differentiate between global->qa-env
+                                # and global -> qa-app
+
+                                if directory == '_global':
+                                    if root.split("/")[-1] == env:
+                                        # This is the env. layer, not the app layer.
+                                        g.edge(parent_dir + "-" + env, directory + "-" + env)
+                                else:
+                                        g.edge(directory + "-" + env, parent_dir + "-app")
+
+
+
+                                #g.edge( root.split("/")[-1] + "-" + env, directory + "-" + env)
                             elif directory == env:
 
                                 if root.split("/")[-2] == env:
                                     # This is the app layer, not the env. layer.
-                                    g.edge(directory + "-app", root.split("/")[-1] + "-" + env)
+                                    g.edge(directory + "-app", parent_dir + "-" + env)
                                 else:
-                                    g.edge(directory + "-env", root.split("/")[-1] + "-" + env)
+  #wrong
+                                    g.edge(parent_dir + "-env", directory + "-" + env)
 
-                            elif root.split("/")[-1] == env:
-                                g.edge(root.split("/")[-1] + '-env', directory + "-" + env)
+                            elif parent_dir == env:
+                                g.edge(parent_dir + '-env', directory + "-" + env)
+
+
+                            else:
+                                g.edge()
 
                             g.view('latest', ARGS.code_path)
 
